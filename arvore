@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Árvores e Caixeiro Viajante</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f4f4f4; color: #222; padding: 20px; }
+  h1 { font-size: 22px; margin-bottom: 16px; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .tab { padding: 7px 16px; border: 1px solid #bbb; border-radius: 8px; cursor: pointer; font-size: 13px; background: #fff; }
+  .tab.active { background: #e0e8ff; border-color: #5577cc; font-weight: bold; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .card { background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 16px 20px; margin-bottom: 12px; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .metric { background: #f0f0f0; border-radius: 8px; padding: 10px 14px; flex: 1; min-width: 100px; }
+  .metric-label { font-size: 12px; color: #666; margin-bottom: 4px; }
+  .metric-val { font-size: 20px; font-weight: bold; }
+  .input-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  input[type=number] { width: 90px; padding: 6px 8px; border: 1px solid #bbb; border-radius: 8px; font-size: 13px; }
+  button { padding: 6px 14px; border: 1px solid #bbb; border-radius: 8px; cursor: pointer; background: #fff; font-size: 13px; }
+  button:hover { background: #eee; }
+  button.primary { background: #dceeff; border-color: #4488cc; color: #1155aa; }
+  .log { font-family: monospace; font-size: 12px; background: #f8f8f8; border-radius: 8px; padding: 10px; max-height: 200px; overflow-y: auto; white-space: pre-wrap; color: #555; margin-top: 8px; border: 1px solid #eee; }
+  .tree-svg { width: 100%; overflow: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid #eee; }
+  th { color: #555; font-weight: bold; background: #f9f9f9; }
+  .section-title { font-size: 15px; font-weight: bold; margin-bottom: 10px; color: #333; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; margin-right: 6px; }
+  .badge-b { background: #dceeff; color: #1155aa; }
+  .badge-r { background: #ffdcdc; color: #aa1111; }
+</style>
+</head>
+<body>
+
+<h1>Árvores e Balanceamento + Caixeiro Viajante</h1>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('bst')">BST</button>
+  <button class="tab" onclick="switchTab('avl')">AVL</button>
+  <button class="tab" onclick="switchTab('rbn')">Rubro-Negra</button>
+  <button class="tab" onclick="switchTab('tsp')">Caixeiro Viajante</button>
+  <button class="tab" onclick="switchTab('stats')">Experimentos</button>
+</div>
+
+<!-- BST -->
+<div id="bst" class="panel active">
+  <div class="card">
+    <div class="section-title">Árvore Binária de Busca (BST)</div>
+    <div class="input-row">
+      <input type="number" id="bst-val" placeholder="valor" value="50">
+      <button onclick="bstInsert()">Inserir</button>
+      <button onclick="bstRemove()">Remover</button>
+      <button onclick="bstSearch()">Buscar</button>
+      <button onclick="bstClear()">Limpar</button>
+    </div>
+    <div class="row">
+      <div class="metric"><div class="metric-label">Altura</div><div class="metric-val" id="bst-h">0</div></div>
+      <div class="metric"><div class="metric-label">Nós</div><div class="metric-val" id="bst-n">0</div></div>
+      <div class="metric"><div class="metric-label">Resultado</div><div class="metric-val" id="bst-res">—</div></div>
+    </div>
+    <svg class="tree-svg" id="bst-svg" height="260"></svg>
+    <div class="log" id="bst-log">Insira valores para começar...</div>
+  </div>
+</div>
+
+<!-- AVL -->
+<div id="avl" class="panel">
+  <div class="card">
+    <div class="section-title">Árvore AVL (auto-balanceada)</div>
+    <div class="input-row">
+      <input type="number" id="avl-val" placeholder="valor" value="50">
+      <button onclick="avlInsert()">Inserir</button>
+      <button onclick="avlRemove()">Remover</button>
+      <button onclick="avlSearch()">Buscar</button>
+      <button onclick="avlClear()">Limpar</button>
+    </div>
+    <div class="row">
+      <div class="metric"><div class="metric-label">Altura</div><div class="metric-val" id="avl-h">0</div></div>
+      <div class="metric"><div class="metric-label">Nós</div><div class="metric-val" id="avl-n">0</div></div>
+      <div class="metric"><div class="metric-label">Balanceada?</div><div class="metric-val" id="avl-bal">—</div></div>
+    </div>
+    <svg class="tree-svg" id="avl-svg" height="260"></svg>
+    <div class="log" id="avl-log">Insira valores para começar...</div>
+  </div>
+</div>
+
+<!-- Rubro-Negra -->
+<div id="rbn" class="panel">
+  <div class="card">
+    <div class="section-title">Árvore Rubro-Negra</div>
+    <div class="input-row">
+      <input type="number" id="rbn-val" placeholder="valor" value="50">
+      <button onclick="rbnInsert()">Inserir</button>
+      <button onclick="rbnRemove()">Remover</button>
+      <button onclick="rbnSearch()">Buscar</button>
+      <button onclick="rbnClear()">Limpar</button>
+    </div>
+    <div class="row">
+      <div class="metric"><div class="metric-label">Altura</div><div class="metric-val" id="rbn-h">0</div></div>
+      <div class="metric"><div class="metric-label">Nós</div><div class="metric-val" id="rbn-n">0</div></div>
+      <div class="metric"><div class="metric-label">Altura negra</div><div class="metric-val" id="rbn-bh">—</div></div>
+    </div>
+    <div style="margin-bottom:8px">
+      <span class="badge badge-b">azul = negro</span>
+      <span class="badge badge-r">vermelho = rubro</span>
+    </div>
+    <svg class="tree-svg" id="rbn-svg" height="260"></svg>
+    <div class="log" id="rbn-log">Insira valores para começar...</div>
+  </div>
+</div>
+
+<!-- TSP -->
+<div id="tsp" class="panel">
+  <div class="card">
+    <div class="section-title">Problema do Caixeiro Viajante — Heurística Nearest Neighbor</div>
+    <div class="input-row">
+      <label style="font-size:13px">Cidades:</label>
+      <input type="number" id="tsp-n" value="12" min="4" max="50" style="width:70px">
+      <button class="primary" onclick="tspRun()">Gerar e Resolver</button>
+      <button onclick="tspClear()">Limpar</button>
+    </div>
+    <div class="row">
+      <div class="metric"><div class="metric-label">Cidades</div><div class="metric-val" id="tsp-cities">—</div></div>
+      <div class="metric"><div class="metric-label">Distância total</div><div class="metric-val" id="tsp-dist">—</div></div>
+      <div class="metric"><div class="metric-label">Tempo (ms)</div><div class="metric-val" id="tsp-time">—</div></div>
+    </div>
+    <svg class="tree-svg" id="tsp-svg" height="320" style="border:1px solid #ddd;border-radius:8px"></svg>
+  </div>
+</div>
+
+<!-- Experimentos -->
+<div id="stats" class="panel">
+  <div class="card">
+    <div class="section-title">Experimentos comparativos — 30 execuções por tamanho</div>
+    <div class="input-row">
+      <button class="primary" onclick="runExperiments()">Executar todos os experimentos</button>
+    </div>
+    <div id="exp-progress" style="font-size:12px;color:#666;margin-bottom:10px"></div>
+    <table id="exp-table">
+      <thead>
+        <tr>
+          <th>Tamanho</th>
+          <th>Média (ms)</th>
+          <th>Desvio padrão</th>
+          <th>Mínimo</th>
+          <th>Máximo</th>
+          <th>Mediana</th>
+        </tr>
+      </thead>
+      <tbody id="exp-tbody">
+        <tr><td colspan="6" style="color:#999">Execute os experimentos para ver os resultados.</td></tr>
+      </tbody>
+    </table>
+    <canvas id="exp-chart" height="180" style="margin-top:20px;width:100%"></canvas>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// BST - Árvore Binária de Busca
+// ============================================================
+class BSTNode {
+  constructor(v) { this.val = v; this.left = this.right = null; }
+}
+
+class BST {
+  constructor() { this.root = null; }
+
+  insert(v) { this.root = this._ins(this.root, v); }
+  _ins(n, v) {
+    if (!n) return new BSTNode(v);
+    if (v < n.val) n.left = this._ins(n.left, v);
+    else if (v > n.val) n.right = this._ins(n.right, v);
+    return n;
+  }
+
+  remove(v) { this.root = this._rem(this.root, v); }
+  _rem(n, v) {
+    if (!n) return null;
+    if (v < n.val) n.left = this._rem(n.left, v);
+    else if (v > n.val) n.right = this._rem(n.right, v);
+    else {
+      if (!n.left) return n.right;
+      if (!n.right) return n.left;
+      let m = n.right;
+      while (m.left) m = m.left;
+      n.val = m.val;
+      n.right = this._rem(n.right, m.val);
+    }
+    return n;
+  }
+
+  search(v) {
+    let n = this.root;
+    while (n) {
+      if (v === n.val) return true;
+      n = v < n.val ? n.left : n.right;
+    }
+    return false;
+  }
+
+  height(n = this.root) {
+    if (!n) return 0;
+    return 1 + Math.max(this.height(n.left), this.height(n.right));
+  }
+
+  count(n = this.root) {
+    if (!n) return 0;
+    return 1 + this.count(n.left) + this.count(n.right);
+  }
+}
+
+// ============================================================
+// AVL - Árvore AVL Auto-Balanceada
+// ============================================================
+class AVLNode {
+  constructor(v) { this.val = v; this.left = this.right = null; this.h = 1; }
+}
+
+class AVL {
+  constructor() { this.root = null; }
+
+  _h(n) { return n ? n.h : 0; }
+  _upd(n) { n.h = 1 + Math.max(this._h(n.left), this._h(n.right)); }
+  _bf(n) { return n ? this._h(n.left) - this._h(n.right) : 0; }
+
+  _rotR(y) {
+    let x = y.left, T = x.right;
+    x.right = y; y.left = T;
+    this._upd(y); this._upd(x);
+    return x;
+  }
+
+  _rotL(x) {
+    let y = x.right, T = y.left;
+    y.left = x; x.right = T;
+    this._upd(x); this._upd(y);
+    return y;
+  }
+
+  _bal(n) {
+    this._upd(n);
+    let b = this._bf(n);
+    if (b > 1 && this._bf(n.left) >= 0) return this._rotR(n);
+    if (b > 1 && this._bf(n.left) < 0) { n.left = this._rotL(n.left); return this._rotR(n); }
+    if (b < -1 && this._bf(n.right) <= 0) return this._rotL(n);
+    if (b < -1 && this._bf(n.right) > 0) { n.right = this._rotR(n.right); return this._rotL(n); }
+    return n;
+  }
+
+  insert(v) { this.root = this._ins(this.root, v); }
+  _ins(n, v) {
+    if (!n) return new AVLNode(v);
+    if (v < n.val) n.left = this._ins(n.left, v);
+    else if (v > n.val) n.right = this._ins(n.right, v);
+    return this._bal(n);
+  }
+
+  remove(v) { this.root = this._rem(this.root, v); }
+  _rem(n, v) {
+    if (!n) return null;
+    if (v < n.val) n.left = this._rem(n.left, v);
+    else if (v > n.val) n.right = this._rem(n.right, v);
+    else {
+      if (!n.left) return n.right;
+      if (!n.right) return n.left;
+      let m = n.right;
+      while (m.left) m = m.left;
+      n.val = m.val;
+      n.right = this._rem(n.right, m.val);
+    }
+    return this._bal(n);
+  }
+
+  search(v) {
+    let n = this.root;
+    while (n) {
+      if (v === n.val) return true;
+      n = v < n.val ? n.left : n.right;
+    }
+    return false;
+  }
+
+  height(n = this.root) { return this._h(n); }
+
+  isBalanced(n = this.root) {
+    if (!n) return true;
+    return Math.abs(this._bf(n)) <= 1 && this.isBalanced(n.left) && this.isBalanced(n.right);
+  }
+
+  count(n = this.root) {
+    if (!n) return 0;
+    return 1 + this.count(n.left) + this.count(n.right);
+  }
+}
+
+// ============================================================
+// Rubro-Negra (Red-Black Tree)
+// ============================================================
+const RED = true, BLACK = false;
+
+class RBNode {
+  constructor(v) { this.val = v; this.left = this.right = null; this.color = RED; this.p = null; }
+}
+
+class RBT {
+  constructor() {
+    this.NIL = new RBNode(null);
+    this.NIL.color = BLACK;
+    this.root = this.NIL;
+  }
+
+  _isR(n) { return n && n !== this.NIL && n.color === RED; }
+
+  insert(v) {
+    let z = new RBNode(v);
+    z.left = z.right = z.p = this.NIL;
+    let y = this.NIL, x = this.root;
+    while (x !== this.NIL) { y = x; x = z.val < x.val ? x.left : x.right; }
+    z.p = y;
+    if (y === this.NIL) this.root = z;
+    else if (z.val < y.val) y.left = z;
+    else y.right = z;
+    this._fixIns(z);
+  }
+
+  _fixIns(z) {
+    while (this._isR(z.p)) {
+      if (z.p === z.p.p.left) {
+        let y = z.p.p.right;
+        if (this._isR(y)) { z.p.color = BLACK; y.color = BLACK; z.p.p.color = RED; z = z.p.p; }
+        else {
+          if (z === z.p.right) { z = z.p; this._rotL(z); }
+          z.p.color = BLACK; z.p.p.color = RED; this._rotR(z.p.p);
+        }
+      } else {
+        let y = z.p.p.left;
+        if (this._isR(y)) { z.p.color = BLACK; y.color = BLACK; z.p.p.color = RED; z = z.p.p; }
+        else {
+          if (z === z.p.left) { z = z.p; this._rotR(z); }
+          z.p.color = BLACK; z.p.p.color = RED; this._rotL(z.p.p);
+        }
+      }
+    }
+    this.root.color = BLACK;
+  }
+
+  _rotL(x) {
+    let y = x.right; x.right = y.left;
+    if (y.left !== this.NIL) y.left.p = x;
+    y.p = x.p;
+    if (x.p === this.NIL) this.root = y;
+    else if (x === x.p.left) x.p.left = y;
+    else x.p.right = y;
+    y.left = x; x.p = y;
+  }
+
+  _rotR(x) {
+    let y = x.left; x.left = y.right;
+    if (y.right !== this.NIL) y.right.p = x;
+    y.p = x.p;
+    if (x.p === this.NIL) this.root = y;
+    else if (x === x.p.right) x.p.right = y;
+    else x.p.left = y;
+    y.right = x; x.p = y;
+  }
+
+  _min(n) { while (n.left !== this.NIL) n = n.left; return n; }
+
+  _trans(u, v) {
+    if (u.p === this.NIL) this.root = v;
+    else if (u === u.p.left) u.p.left = v;
+    else u.p.right = v;
+    v.p = u.p;
+  }
+
+  remove(v) {
+    let z = this._find(v);
+    if (z === this.NIL) return;
+    let y = z, oc = y.color, x;
+    if (z.left === this.NIL) { x = z.right; this._trans(z, z.right); }
+    else if (z.right === this.NIL) { x = z.left; this._trans(z, z.left); }
+    else {
+      y = this._min(z.right); oc = y.color; x = y.right;
+      if (y.p === z) x.p = y;
+      else { this._trans(y, y.right); y.right = z.right; y.right.p = y; }
+      this._trans(z, y); y.left = z.left; y.left.p = y; y.color = z.color;
+    }
+    if (oc === BLACK) this._fixDel(x);
+  }
+
+  _fixDel(x) {
+    while (x !== this.root && x.color === BLACK) {
+      if (x === x.p.left) {
+        let w = x.p.right;
+        if (w.color === RED) { w.color = BLACK; x.p.color = RED; this._rotL(x.p); w = x.p.right; }
+        if (w.left.color === BLACK && w.right.color === BLACK) { w.color = RED; x = x.p; }
+        else {
+          if (w.right.color === BLACK) { w.left.color = BLACK; w.color = RED; this._rotR(w); w = x.p.right; }
+          w.color = x.p.color; x.p.color = BLACK; w.right.color = BLACK; this._rotL(x.p); x = this.root;
+        }
+      } else {
+        let w = x.p.left;
+        if (w.color === RED) { w.color = BLACK; x.p.color = RED; this._rotR(x.p); w = x.p.left; }
+        if (w.right.color === BLACK && w.left.color === BLACK) { w.color = RED; x = x.p; }
+        else {
+          if (w.left.color === BLACK) { w.right.color = BLACK; w.color = RED; this._rotL(w); w = x.p.left; }
+          w.color = x.p.color; x.p.color = BLACK; w.left.color = BLACK; this._rotR(x.p); x = this.root;
+        }
+      }
+    }
+    x.color = BLACK;
+  }
+
+  _find(v) {
+    let n = this.root;
+    while (n !== this.NIL) {
+      if (v === n.val) return n;
+      n = v < n.val ? n.left : n.right;
+    }
+    return this.NIL;
+  }
+
+  search(v) { return this._find(v) !== this.NIL; }
+  height(n = this.root) {
+    if (!n || n === this.NIL) return 0;
+    return 1 + Math.max(this.height(n.left), this.height(n.right));
+  }
+  blackHeight(n = this.root) {
+    if (!n || n === this.NIL) return 1;
+    return (n.color === BLACK ? 1 : 0) + this.blackHeight(n.left);
+  }
+  count(n = this.root) {
+    if (!n || n === this.NIL) return 0;
+    return 1 + this.count(n.left) + this.count(n.right);
+  }
+}
+
+// ============================================================
+// Desenho das árvores com SVG
+// ============================================================
+function drawTree(svgId, root, type, nil) {
+  const svg = document.getElementById(svgId);
+  const W = svg.clientWidth || 700, H = 240;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = '';
+  if (!root || root === nil) return;
+
+  const nodes = [];
+  function layout(n, depth, lo, hi) {
+    if (!n || n === nil) return;
+    const x = (lo + hi) / 2, y = 30 + depth * 50;
+    nodes.push({ n, x, y });
+    layout(n.left, depth + 1, lo, (lo + hi) / 2);
+    layout(n.right, depth + 1, (lo + hi) / 2, hi);
+  }
+  layout(root, 0, 0, W);
+
+  const map = new Map(nodes.map(d => [d.n, d]));
+
+  // Arestas
+  nodes.forEach(({ n, x, y }) => {
+    ['left', 'right'].forEach(side => {
+      const child = n[side];
+      if (child && child !== nil && map.has(child)) {
+        const c = map.get(child);
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', x); line.setAttribute('y1', y);
+        line.setAttribute('x2', c.x); line.setAttribute('y2', c.y);
+        line.setAttribute('stroke', '#ccc'); line.setAttribute('stroke-width', '1.5');
+        svg.appendChild(line);
+      }
+    });
+  });
+
+  // Nós
+  nodes.forEach(({ n, x, y }) => {
+    const isRed = type === 'rbn' && n.color === RED;
+    const fill = isRed ? '#ffdcdc' : '#dceeff';
+    const stroke = isRed ? '#cc4444' : '#4488cc';
+    const tc = isRed ? '#aa1111' : '#1155aa';
+
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', x); circle.setAttribute('cy', y); circle.setAttribute('r', 18);
+    circle.setAttribute('fill', fill); circle.setAttribute('stroke', stroke); circle.setAttribute('stroke-width', '1.5');
+    svg.appendChild(circle);
+
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', x); text.setAttribute('y', y + 4);
+    text.setAttribute('text-anchor', 'middle'); text.setAttribute('font-size', '11');
+    text.setAttribute('fill', tc); text.setAttribute('font-weight', 'bold');
+    text.textContent = n.val;
+    svg.appendChild(text);
+  });
+}
+
+// ============================================================
+// Controles BST
+// ============================================================
+const bst = new BST();
+function bstLog(m) { const el = document.getElementById('bst-log'); el.textContent += '\n' + m; el.scrollTop = el.scrollHeight; }
+function bstUpdate() {
+  document.getElementById('bst-h').textContent = bst.height();
+  document.getElementById('bst-n').textContent = bst.count();
+  drawTree('bst-svg', bst.root, 'bst', null);
+}
+function bstInsert() { const v = parseInt(document.getElementById('bst-val').value); if (isNaN(v)) return; bst.insert(v); bstLog('Inserido: ' + v); bstUpdate(); }
+function bstRemove() { const v = parseInt(document.getElementById('bst-val').value); if (isNaN(v)) return; bst.remove(v); bstLog('Removido: ' + v); bstUpdate(); }
+function bstSearch() { const v = parseInt(document.getElementById('bst-val').value); const f = bst.search(v); document.getElementById('bst-res').textContent = f ? 'Encontrado ✓' : 'Não encontrado'; bstLog('Busca ' + v + ': ' + (f ? '✓' : '✗')); }
+function bstClear() { bst.root = null; document.getElementById('bst-log').textContent = 'Árvore limpa.'; document.getElementById('bst-res').textContent = '—'; bstUpdate(); }
+
+// ============================================================
+// Controles AVL
+// ============================================================
+const avl = new AVL();
+function avlLog(m) { const el = document.getElementById('avl-log'); el.textContent += '\n' + m; el.scrollTop = el.scrollHeight; }
+function avlUpdate() {
+  document.getElementById('avl-h').textContent = avl.height();
+  document.getElementById('avl-n').textContent = avl.count();
+  document.getElementById('avl-bal').textContent = avl.isBalanced() ? 'Sim ✓' : 'Não ✗';
+  drawTree('avl-svg', avl.root, 'avl', null);
+}
+function avlInsert() { const v = parseInt(document.getElementById('avl-val').value); if (isNaN(v)) return; avl.insert(v); avlLog('Inserido: ' + v + ' (rotações aplicadas se necessário)'); avlUpdate(); }
+function avlRemove() { const v = parseInt(document.getElementById('avl-val').value); if (isNaN(v)) return; avl.remove(v); avlLog('Removido: ' + v); avlUpdate(); }
+function avlSearch() { const v = parseInt(document.getElementById('avl-val').value); const f = avl.search(v); avlLog('Busca ' + v + ': ' + (f ? '✓ Encontrado' : '✗ Não encontrado')); }
+function avlClear() { avl.root = null; document.getElementById('avl-log').textContent = 'Árvore limpa.'; avlUpdate(); }
+
+// ============================================================
+// Controles Rubro-Negra
+// ============================================================
+const rbn = new RBT();
+function rbnLog(m) { const el = document.getElementById('rbn-log'); el.textContent += '\n' + m; el.scrollTop = el.scrollHeight; }
+function rbnUpdate() {
+  document.getElementById('rbn-h').textContent = rbn.height();
+  document.getElementById('rbn-n').textContent = rbn.count();
+  document.getElementById('rbn-bh').textContent = rbn.blackHeight();
+  drawTree('rbn-svg', rbn.root, 'rbn', rbn.NIL);
+}
+function rbnInsert() { const v = parseInt(document.getElementById('rbn-val').value); if (isNaN(v)) return; rbn.insert(v); rbnLog('Inserido: ' + v); rbnUpdate(); }
+function rbnRemove() { const v = parseInt(document.getElementById('rbn-val').value); if (isNaN(v)) return; rbn.remove(v); rbnLog('Removido: ' + v); rbnUpdate(); }
+function rbnSearch() { const v = parseInt(document.getElementById('rbn-val').value); const f = rbn.search(v); rbnLog('Busca ' + v + ': ' + (f ? '✓ Encontrado' : '✗ Não encontrado')); }
+function rbnClear() { rbn.root = rbn.NIL; document.getElementById('rbn-log').textContent = 'Árvore limpa.'; rbnUpdate(); }
+
+// ============================================================
+// TSP - Caixeiro Viajante (Nearest Neighbor)
+// ============================================================
+function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+
+function tspNN(cities) {
+  const n = cities.length;
+  const visited = new Array(n).fill(false);
+  let cur = 0, route = [0], total = 0;
+  visited[0] = true;
+  for (let i = 1; i < n; i++) {
+    let best = -1, bd = Infinity;
+    for (let j = 0; j < n; j++) {
+      if (!visited[j]) {
+        const d = dist(cities[cur], cities[j]);
+        if (d < bd) { bd = d; best = j; }
+      }
+    }
+    visited[best] = true;
+    total += bd;
+    route.push(best);
+    cur = best;
+  }
+  total += dist(cities[cur], cities[0]);
+  route.push(0);
+  return { route, total };
+}
+
+let tspCities = [];
+
+function tspRun() {
+  const n = parseInt(document.getElementById('tsp-n').value) || 12;
+  tspCities = Array.from({ length: n }, () => ({ x: Math.random() * 560 + 20, y: Math.random() * 260 + 30 }));
+  const t0 = performance.now();
+  const { route, total } = tspNN(tspCities);
+  const t1 = performance.now();
+  document.getElementById('tsp-cities').textContent = n;
+  document.getElementById('tsp-dist').textContent = total.toFixed(1);
+  document.getElementById('tsp-time').textContent = (t1 - t0).toFixed(3);
+  drawTSP(route);
+}
+
+function drawTSP(route) {
+  const svg = document.getElementById('tsp-svg');
+  const W = svg.clientWidth || 700;
+  svg.setAttribute('viewBox', `0 0 ${W} 320`);
+  svg.innerHTML = '';
+
+  for (let i = 0; i < route.length - 1; i++) {
+    const a = tspCities[route[i]], b = tspCities[route[i + 1]];
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', a.x * W / 600); line.setAttribute('y1', a.y);
+    line.setAttribute('x2', b.x * W / 600); line.setAttribute('y2', b.y);
+    line.setAttribute('stroke', '#4488cc'); line.setAttribute('stroke-width', '1.5');
+    svg.appendChild(line);
+  }
+
+  tspCities.forEach((c, i) => {
+    const cx = c.x * W / 600, cy = c.y;
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', cx); circle.setAttribute('cy', cy);
+    circle.setAttribute('r', i === 0 ? 9 : 5);
+    circle.setAttribute('fill', i === 0 ? '#ffdcdc' : '#dceeff');
+    circle.setAttribute('stroke', i === 0 ? '#cc4444' : '#4488cc');
+    circle.setAttribute('stroke-width', '1.5');
+    svg.appendChild(circle);
+
+    const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    t.setAttribute('x', cx + 9); t.setAttribute('y', cy + 4);
+    t.setAttribute('font-size', '10'); t.setAttribute('fill', '#888');
+    t.textContent = i;
+    svg.appendChild(t);
+  });
+}
+
+function tspClear() {
+  document.getElementById('tsp-svg').innerHTML = '';
+  tspCities = [];
+  ['tsp-cities', 'tsp-dist', 'tsp-time'].forEach(id => document.getElementById(id).textContent = '—');
+}
+
+// ============================================================
+// Experimentos estatísticos — 30 execuções × 3 tamanhos
+// ============================================================
+function runExperiments() {
+  const sizes = [10, 100, 1000];
+  const RUNS = 30;
+  document.getElementById('exp-progress').textContent = 'Executando ' + (RUNS * sizes.length) + ' experimentos...';
+
+  const results = [];
+  sizes.forEach(n => {
+    const times = [];
+    for (let r = 0; r < RUNS; r++) {
+      const cities = Array.from({ length: n }, () => ({ x: Math.random() * 1000, y: Math.random() * 1000 }));
+      const t0 = performance.now();
+      tspNN(cities);
+      const t1 = performance.now();
+      times.push(t1 - t0);
+    }
+    times.sort((a, b) => a - b);
+    const mean = times.reduce((s, x) => s + x, 0) / RUNS;
+    const variance = times.reduce((s, x) => s + (x - mean) ** 2, 0) / RUNS;
+    const std = Math.sqrt(variance);
+    const median = RUNS % 2 === 0
+      ? (times[RUNS / 2 - 1] + times[RUNS / 2]) / 2
+      : times[Math.floor(RUNS / 2)];
+    results.push({ n, mean, std, min: times[0], max: times[RUNS - 1], median });
+  });
+
+  document.getElementById('exp-progress').textContent =
+    'Concluído: ' + RUNS + ' execuções × ' + sizes.length + ' tamanhos = ' + (RUNS * sizes.length) + ' experimentos totais.';
+
+  const tbody = document.getElementById('exp-tbody');
+  tbody.innerHTML = results.map(r =>
+    `<tr>
+      <td>${r.n} cidades</td>
+      <td>${r.mean.toFixed(4)}</td>
+      <td>${r.std.toFixed(4)}</td>
+      <td>${r.min.toFixed(4)}</td>
+      <td>${r.max.toFixed(4)}</td>
+      <td>${r.median.toFixed(4)}</td>
+    </tr>`
+  ).join('');
+
+  drawExpChart(results);
+}
+
+function drawExpChart(results) {
+  const canvas = document.getElementById('exp-chart');
+  if (!canvas.getContext) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width = canvas.parentElement.clientWidth || 700, H = canvas.height = 200;
+  ctx.clearRect(0, 0, W, H);
+
+  const maxVal = Math.max(...results.map(r => r.max));
+  const pad = { l: 70, r: 20, t: 20, b: 50 };
+  const cW = W - pad.l - pad.r, cH = H - pad.t - pad.b;
+
+  // Eixos
+  ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, pad.t + cH);
+  ctx.lineTo(pad.l + cW, pad.t + cH); ctx.stroke();
+
+  // Barras + barras de erro
+  const bw = Math.min(80, cW / results.length * 0.5);
+  results.forEach((r, i) => {
+    const bx = pad.l + (i + 0.5) * cW / results.length - bw / 2;
+    const bh = r.mean / maxVal * cH;
+    const by = pad.t + cH - bh;
+
+    // Barra
+    ctx.fillStyle = 'rgba(68, 136, 220, 0.5)';
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = '#4488cc'; ctx.lineWidth = 1;
+    ctx.strokeRect(bx, by, bw, bh);
+
+    // Barra de erro (±1 desvio padrão)
+    const errH = r.std / maxVal * cH;
+    ctx.strokeStyle = '#cc4444'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(bx + bw / 2, by - errH); ctx.lineTo(bx + bw / 2, by + errH); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(bx + bw / 2 - 6, by - errH); ctx.lineTo(bx + bw / 2 + 6, by - errH);
+    ctx.moveTo(bx + bw / 2 - 6, by + errH); ctx.lineTo(bx + bw / 2 + 6, by + errH);
+    ctx.stroke();
+
+    // Rótulos
+    ctx.fillStyle = '#555'; ctx.font = '11px Arial'; ctx.textAlign = 'center';
+    ctx.fillText(r.n + ' cidades', bx + bw / 2, pad.t + cH + 20);
+    ctx.fillText(r.mean.toFixed(3) + 'ms', bx + bw / 2, by - errH - 6);
+  });
+
+  // Título eixo Y
+  ctx.save();
+  ctx.translate(14, pad.t + cH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = '#666'; ctx.font = '11px Arial'; ctx.textAlign = 'center';
+  ctx.fillText('tempo médio (ms)', 0, 0);
+  ctx.restore();
+
+  // Legenda
+  ctx.fillStyle = 'rgba(68, 136, 220, 0.5)';
+  ctx.fillRect(pad.l, pad.t + cH + 30, 12, 12);
+  ctx.fillStyle = '#555'; ctx.font = '11px Arial'; ctx.textAlign = 'left';
+  ctx.fillText('média', pad.l + 16, pad.t + cH + 41);
+  ctx.strokeStyle = '#cc4444'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(pad.l + 80, pad.t + cH + 36); ctx.lineTo(pad.l + 92, pad.t + cH + 36); ctx.stroke();
+  ctx.fillStyle = '#555';
+  ctx.fillText('±1 desvio padrão', pad.l + 96, pad.t + cH + 41);
+}
+
+// ============================================================
+// Navegação entre abas
+// ============================================================
+function switchTab(id) {
+  const ids = ['bst', 'avl', 'rbn', 'tsp', 'stats'];
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', ids[i] === id));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ============================================================
+// Inicialização com valores padrão
+// ============================================================
+window.addEventListener('load', () => {
+  [50, 30, 70, 20, 40, 60, 80].forEach(v => { bst.insert(v); avl.insert(v); rbn.insert(v); });
+  bstUpdate(); avlUpdate(); rbnUpdate();
+  document.getElementById('bst-log').textContent = 'Valores iniciais: 50, 30, 70, 20, 40, 60, 80';
+  document.getElementById('avl-log').textContent = 'Valores iniciais: 50, 30, 70, 20, 40, 60, 80';
+  document.getElementById('rbn-log').textContent = 'Valores iniciais: 50, 30, 70, 20, 40, 60, 80';
+});
+</script>
+</body>
+</html>
